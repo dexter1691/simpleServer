@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -19,25 +20,34 @@ public class SimpleServer extends NanoHTTPD {
 
         public SimpleServer() {
 
-            super(7669);
+            super(9090);
         }
 
         @Override
         public Response serve(String uri, Method method, Map<String, String> headers, Map<String, String> parms,
                        Map<String, String> files) throws JSONException  {
-        	String[] values = null ; 
+        	String code = null ; 
+        	String state = null ; 
         	int i=0 ; 
        	 System.out.println(uri);
-      if(!uri.equals("/")){
-        	String paramSet = uri.split("\\?")[1];
-        	String[] params = paramSet.split("&");
-        	for (String param : params)  
-            {  
-                
-                 values[i] = param.split("=")[1];  //confirm that values[0] is code 
-                 i++ ;
-                
-            }}  
+       	Set<String> keys = parms.keySet();  
+       	for (String key : keys)  
+       	{  
+       	   if(key.equals("state")){
+       		System.out.println("state is : "+ key );
+       		System.out.println("value is : "+ parms.get(key) );
+       		state = parms.get(key) ;
+       	   
+       	   }
+       	   else if (key.equals("code") ){
+       		   
+       		System.out.println("code is : "+ key );
+       		System.out.println("value is : "+ parms.get(key) );
+       		code = parms.get(key) ; 
+       	   }
+          		
+           	  
+       	}  
         	if(uri.startsWith("/dropbox_callback")) {
             	
             	//Dropbox calling....
@@ -52,8 +62,8 @@ public class SimpleServer extends NanoHTTPD {
                   JsonNode account_details = accounts.readAccounts();
          		 String userid = account_details.path("userid").getTextValue();
                   
-                  nameValuePairs.add(new BasicNameValuePair("code", values[0]));
-                  nameValuePairs.add(new BasicNameValuePair("state", values[1]));
+                  nameValuePairs.add(new BasicNameValuePair("code", code )) ;
+                  nameValuePairs.add(new BasicNameValuePair("state", state )) ;
                   nameValuePairs.add(new BasicNameValuePair("userid", userid )); // dunno what to put as value  
                   
 
@@ -88,8 +98,8 @@ public class SimpleServer extends NanoHTTPD {
                       List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
                       
                       
-                      nameValuePairs.add(new BasicNameValuePair("code", ""));
-                      nameValuePairs.add(new BasicNameValuePair("state",""));
+                      nameValuePairs.add(new BasicNameValuePair("code",code));
+                      nameValuePairs.add(new BasicNameValuePair("state",state));
                     
                       post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                       HttpResponse response = client.execute(post);

@@ -32,8 +32,7 @@ public class accounts {
 	static boolean	dropboxAuthentication = false ; 
 	
 public static class GoogleAccounts {
-		 String userid= null ; 
-		 String emailid = null ; 
+		 String userid ,emailid ; 
 
          public	GoogleAccounts(String userid, String emailid){
         	 
@@ -46,8 +45,7 @@ public static class GoogleAccounts {
 	}
 	
 public static class DropboxAccounts {
-	String userid = null ; 
-	String access_token = null ; 
+	String userid ,access_token ; 
 
     public	DropboxAccounts(String userid, String emailid){
    	 
