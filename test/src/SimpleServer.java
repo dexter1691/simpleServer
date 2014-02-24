@@ -20,7 +20,7 @@ public class SimpleServer extends NanoHTTPD {
 
         public SimpleServer() {
 
-            super(9090);
+            super(8000);
         }
 
         @Override
@@ -59,35 +59,30 @@ public class SimpleServer extends NanoHTTPD {
                 try {
 
                   List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
-                  JsonNode account_details = accounts.readAccounts();
-         		 String userid = account_details.path("userid").getTextValue();
+                  
                   
                   nameValuePairs.add(new BasicNameValuePair("code", code )) ;
                   nameValuePairs.add(new BasicNameValuePair("state", state )) ;
-                  nameValuePairs.add(new BasicNameValuePair("userid", userid )); // dunno what to put as value  
-                  
+                  nameValuePairs.add(new BasicNameValuePair("userid", accounts.readFile("goog", "id") )); 
 
                   post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                   HttpResponse response = client.execute(post);
-                  JSONObject mobj = new JSONObject(response.toString());
-                  accounts.account_obj = new accounts.Accounts() ;
+                  JSONObject mobj = new JSONObject(response);
                   
-         
-                  accounts.account_obj = new accounts.Accounts() ;
-             		
-        		 accounts.Accounts.dbaccount = new accounts.DropboxAccounts(mobj.getString("uid") , mobj.getString("token") )  ;             		
-                  			
-        		  accounts.writeAccounts(accounts.account_obj) ;
+                  // here I want mob.getString("uid") and mob.getString("token")
+                  
+        		
         	        accounts.dropboxAuthentication = true	;
                   				
-                
-                  }catch (IOException | JSONException e ) {
+        	        return new NanoHTTPD.Response(response.toString());
+                  }catch (IOException | ClassNotFoundException e) {
                       e.printStackTrace();
                   } 
             	
                 
             } else {
                 if (uri.startsWith("/callback")) {
+                	System.out.println("starts with callback !............................");
                     //google calling.....
                 	//send 'POST' to CCV 
                 	HttpClient client = new DefaultHttpClient();
@@ -100,20 +95,21 @@ public class SimpleServer extends NanoHTTPD {
                       
                       nameValuePairs.add(new BasicNameValuePair("code",code));
                       nameValuePairs.add(new BasicNameValuePair("state",state));
-                    
+                     code = null ; state= null ; 
                       post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                       HttpResponse response = client.execute(post);
                       System.out.println("request sent to the server !");
                       //read the response 
-                      JSONObject mobj = new JSONObject(response);
-                      accounts.account_obj = new accounts.Accounts() ;
-                   		
-    		accounts.Accounts.dbaccount = new accounts.DropboxAccounts(mobj.getString("uid") , mobj.getString("token") )  ;             		
-              			
-    		  accounts.writeAccounts(accounts.account_obj) ;
-    	        accounts.googleAuthentication = true	;
-              				
-    			return new NanoHTTPD.Response(response.toString());
+                      String result = accounts.convertStreamToString(response.getEntity().getContent());
+                      System.out.println("gooooooooooooooooooooooooooogle  :"+result);
+                      System.out.println("call back google result is :"+result);
+                      System.out.println("call back google result is :"+result);
+                      System.out.println("call back google result is :"+result);
+                      JSONObject mobj = new JSONObject(result);
+                      accounts.writefile("goog", mobj,result ) ;
+                      accounts.googleAuthentication = true	;
+    	      
+    			return new NanoHTTPD.Response(result);
 	
               				
               			
@@ -130,35 +126,42 @@ public class SimpleServer extends NanoHTTPD {
 			return new NanoHTTPD.Response("heoloo");
         }
         public static void main(String[] args) {
-            ServerRunner.run(SimpleServer.class);
+            ServerRunner.run(SimpleServer.class,true );
         }
         public static class ServerRunner {
-            public static void run(Class serverClass) {
+            public static void run(Class serverClass, boolean flag ) {
                 try {
-                    executeInstance((NanoHTTPD) serverClass.newInstance());
+                    executeInstance((NanoHTTPD) serverClass.newInstance(),flag );
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
 
-            public static void executeInstance(NanoHTTPD server) {
-                try {
-                	
-                    server.start();
-                } catch (IOException ioe) {
-                    System.err.println("Couldn't start server:\n" + ioe);
-                    System.exit(-1);
-                }
+            public static void executeInstance(NanoHTTPD server,boolean flag ) {
+            	if(flag){
+            		 try {
+                     	
+                         server.start();
+                     } catch (IOException ioe) {
+                         System.err.println("Couldn't start server:\n" + ioe);
+                         System.exit(-1);
+                     }
 
-                System.out.println("Server started, Hit Enter to stop.\n");
+                     System.out.println("Server started, Hit Enter to stop.\n");
 
-                try {
-                    System.in.read();
-                } catch (Throwable ignored) {
-                }
+                     try {
+                         System.in.read();
+                     } catch (Throwable ignored) {
+                     }
 
-                server.stop();
-                System.out.println("Server stopped.\n");
+                     server.stop();
+                     System.out.println("Server stopped.\n");
+            	}
+            	else {
+            		server.stop() ; 
+            		
+            	}
+               
             }
         }
     }

@@ -11,6 +11,6 @@
 	<classpathentry kind="lib" path="/home/shubham/Downloads/httpcomponents-client-4.3.2/lib/httpmime-4.3.2.jar"/>
 	<classpathentry kind="lib" path="/home/shubham/Downloads/org.json-20120521.jar"/>
 	<classpathentry kind="lib" path="/home/shubham/Downloads/jackson-core-asl-1.9.4.jar"/>
-	<classpathentry kind="lib" path="/home/shubham/Downloads/jackson-mapper-asl-1.5.0.jar"/>
+	<classpathentry kind="lib" path="/home/shubham/Downloads/jackson-mapper-asl-1.9.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
