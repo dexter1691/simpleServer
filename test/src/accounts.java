@@ -33,54 +33,63 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.json.JSONException;
 import org.json.JSONObject;
 public class accounts  {
-    public static String CONFIG_PATH = System.getProperty("user.dir")+"//" ;
+    public static String CONFIG_PATH = System.getProperty("user.dir")+"//user.cnf" ;
     
     String  random_key = UUID.randomUUID().toString();
     static boolean googleAuthentication = false ; 
 	static boolean	dropboxAuthentication = false ; 
 	
-	 public static void writefile(String file,JSONObject o,String result) throws IOException{
-		 System.out.println("Goooooooooooooooooooooooogle  "+ result );
-    	 ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(CONFIG_PATH+file+".conf")) ;
- 		 os.writeObject(o.toString()) ;
- 		 os.close();
- 		 System.out.println("Writing to "+ CONFIG_PATH+file );
-    	 
-    	 
-     }
+	 public static void writeFile(JSONObject o,  boolean flag ) throws FileNotFoundException, IOException, JSONException, ClassNotFoundException{
+ 		
+ 		JSONObject ob = null ;
+ 		if (flag){
+ 			 ob = readFile();
+ 			 ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(CONFIG_PATH )) ;
+ 			ob.put("uid",o.getString("uid") );
+ 			ob.put("token",o.getString("token") );
+ 			os.writeObject(ob.toString());
+ 			os.flush() ;
+     		os.close();
+ 			}
+ 		else{
+ 			ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(CONFIG_PATH)) ;
+ 			os.writeObject(o.toString());
+ 			os.flush() ;
+     		os.close();
+ 		}
+ 		
+ 		
+ 		
+ 		}
 
-	 public static String readFile(String file ,String key) throws IOException, ClassNotFoundException, JSONException{
-    	 	String str=null  ; 
-    	 	ObjectInputStream is = new ObjectInputStream(new FileInputStream(CONFIG_PATH+file+".conf"))  ;
-    	 	str  = (String) is.readObject();
-    		JSONObject o = new JSONObject(str);
-    	 	System.out.println(o);
-    	 	is.close() ; 
-    	    return o.getString(key);
-    	 
-     }
+	 public static JSONObject readFile() throws FileNotFoundException, IOException, JSONException, ClassNotFoundException{
+    	 ObjectInputStream is = new ObjectInputStream(new FileInputStream(CONFIG_PATH))  ;
+ 		
+ 		String  str= (String) is.readObject() ;
+ 		System.out.println("out put os the file is : "+ str);
+ 		JSONObject o = new JSONObject(str);
+ 		
+ 		is.close() ;
+		return o ;
+ 		}
 
 public void dropboxAuthenticate() throws JSONException, IOException, ClassNotFoundException{
 	HttpResponse response = null ;
-	String db_userid ; 
+	
 	System.out.println("DB : google authentication is : "+ googleAuthentication);
-	googleAuthentication = true ; 
+	 
 	if (googleAuthentication){
-		File f = new File(CONFIG_PATH+"db.conf");
+		File f = new File(CONFIG_PATH);
 		String result = null ;
 		HttpClient client = new DefaultHttpClient();
-        HttpPost post = new HttpPost("http://cloudcv.org/cloudcv/auth/dropbox/");
-		if (f.exists() && !f.isDirectory()){
+        
+		if (f.exists() && readFile().has("uid")){
 			try {
-				 System.out.println("DB : authenticated by google and db ");
-              List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+				
+				System.out.println("DB : authenticated by google and db ");
+				HttpGet post = new HttpGet("http://cloudcv.org/cloudcv/auth/dropbox/?type=api&state="+random_key+"&userid="+readFile().get("id")+"&dbuser="+readFile().getString("uid"));
+			  
               
-              nameValuePairs.add(new BasicNameValuePair("type", "api"));
-              nameValuePairs.add(new BasicNameValuePair("state", random_key));
-              nameValuePairs.add(new BasicNameValuePair("userid", readFile("goog","id")));
-              nameValuePairs.add(new BasicNameValuePair("dbuser",readFile("db","uid") ));
-            
-              post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                response = client.execute(post);
                result = convertStreamToString(response.getEntity().getContent()) ;
                System.out.println("DB : when already authenticated respose is : "+ result);
@@ -92,16 +101,11 @@ public void dropboxAuthenticate() throws JSONException, IOException, ClassNotFou
 		}
 		else {
 			try {
+		HttpGet get = new HttpGet("http://cloudcv.org/cloudcv/auth/dropbox/?userid="+readFile().get("id")+"&state="+random_key+"&type=api");
 				 System.out.println("DB : authenticated by google but not dropbox ");
-	              List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
 	              
-	              nameValuePairs.add(new BasicNameValuePair("type", "api"));
-	              nameValuePairs.add(new BasicNameValuePair("state", random_key));
-	              nameValuePairs.add(new BasicNameValuePair("userid", readFile("goog", "id") ));
-	            
-	            
-	              post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-	              response = client.execute(post);
+	           
+	              response = client.execute(get);
 	              result = convertStreamToString(response.getEntity().getContent());
 	              System.out.println("DB : result when file not existed :"+ result);
 	              
@@ -111,7 +115,7 @@ public void dropboxAuthenticate() throws JSONException, IOException, ClassNotFou
 		//read the response 
         JSONObject mobj = new JSONObject(result);
 		Iterator<String> itr = mobj.keys();       // check iterator type 
-		accounts.writefile("db", mobj,"");
+		
 		while(itr.hasNext())
 		{
 			String key=itr.next();
@@ -141,20 +145,21 @@ public void dropboxAuthenticate() throws JSONException, IOException, ClassNotFou
 		            }
 		        } 
 			}
-			if(key.equals("isValid") && mobj.getString("isValid")== "True")
+			if(key.equals("isValid") && mobj.getString("isValid").equals("True"))
 			{
 				//Dropbox authentication successful
 				dropboxAuthentication = true ; 
 			}
-			else{
-				authenticate() ;  
-	            dropboxAuthenticate() ; 
-			}
+			
 	}
 		System.out.println("DB : exiting dropbox authentication. ");
 
     
 }
+	else{
+		authenticate() ;  
+        dropboxAuthenticate() ; 
+	}
 	}
 public void authenticate() throws JSONException, IOException, ClassNotFoundException {
 	
@@ -162,7 +167,7 @@ public void authenticate() throws JSONException, IOException, ClassNotFoundExcep
 	 String result = null ; 
 	 System.out.println("auth : random key for google auth :"+random_key);
 	 System.out.println("");
-	 File f = new File(CONFIG_PATH+"/goog.conf");
+	 File f = new File(CONFIG_PATH);
 	 HttpClient client = new DefaultHttpClient();
      
      HttpResponse response = null;
@@ -173,7 +178,7 @@ public void authenticate() throws JSONException, IOException, ClassNotFoundExcep
 		 
 		 try {
 			 System.out.println("auth : reading and sending google id from the file.");
-			 HttpGet post = new HttpGet("http://cloudcv.org/cloudcv/auth/google/?type=api&state="+random_key+"&userid="+readFile("goog", "id"));
+			 HttpGet post = new HttpGet("http://cloudcv.org/cloudcv/auth/google/?type=api&state="+random_key+"&userid="+readFile().getString("id"));
              response = client.execute(post);
              result = convertStreamToString(response.getEntity().getContent()) ;
              System.out.println("auth : reasponse for new reg : "+ result );
@@ -235,9 +240,10 @@ public void authenticate() throws JSONException, IOException, ClassNotFoundExcep
 		            }
 		        }
 			}
-			if(key.equals("isValid") && mobj.getString("isValid")== "True")
+			if(key.equals("isValid") && mobj.getString("isValid").equals("True"))
 			{
 				//Dropbox authentication successful
+				System.out.println("Google authentication is true !");
 				googleAuthentication = true ; 
 			}
 			
@@ -268,12 +274,12 @@ public static String convertStreamToString(InputStream is) {
 }
 
 public static void main (String... args ) throws JSONException, IOException, ClassNotFoundException{
-	System.out.println(CONFIG_PATH);
+	System.out.println("config path is "+ CONFIG_PATH);
 	
 	 accounts test = new accounts() ; 
 	
-	 System.out.println("starting DB auth...............................");
-	 test.authenticate(); 
+	 test.dropboxAuthenticate();
+	 
 	
 	
 }

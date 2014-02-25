@@ -63,16 +63,18 @@ public class SimpleServer extends NanoHTTPD {
                   
                   nameValuePairs.add(new BasicNameValuePair("code", code )) ;
                   nameValuePairs.add(new BasicNameValuePair("state", state )) ;
-                  nameValuePairs.add(new BasicNameValuePair("userid", accounts.readFile("goog", "id") )); 
+                  nameValuePairs.add(new BasicNameValuePair("userid", accounts.readFile().getString("id") )); 
 
                   post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
                   HttpResponse response = client.execute(post);
-                  JSONObject mobj = new JSONObject(response);
+                  String result = accounts.convertStreamToString(response.getEntity().getContent());
+                  JSONObject mobj = new JSONObject(result);
                   
                   // here I want mob.getString("uid") and mob.getString("token")
-                  
-        		
-        	        accounts.dropboxAuthentication = true	;
+                  System.out.println("dropbox callback result is  :"+result);
+                 
+                  accounts.writeFile(mobj,true ) ;
+                  accounts.dropboxAuthentication = true	;
                   				
         	        return new NanoHTTPD.Response(response.toString());
                   }catch (IOException | ClassNotFoundException e) {
@@ -101,12 +103,14 @@ public class SimpleServer extends NanoHTTPD {
                       System.out.println("request sent to the server !");
                       //read the response 
                       String result = accounts.convertStreamToString(response.getEntity().getContent());
-                      System.out.println("gooooooooooooooooooooooooooogle  :"+result);
-                      System.out.println("call back google result is :"+result);
-                      System.out.println("call back google result is :"+result);
-                      System.out.println("call back google result is :"+result);
+                      System.out.println("result after google callback is :"+result);
                       JSONObject mobj = new JSONObject(result);
-                      accounts.writefile("goog", mobj,result ) ;
+                      
+                      try{
+
+                          accounts.writeFile(mobj,false) ;
+                          
+                      }catch(ClassNotFoundException e ){e.printStackTrace();}
                       accounts.googleAuthentication = true	;
     	      
     			return new NanoHTTPD.Response(result);
@@ -123,7 +127,7 @@ public class SimpleServer extends NanoHTTPD {
             }
         	 
         	
-			return new NanoHTTPD.Response("heoloo");
+			return new NanoHTTPD.Response("CloudCV User Authentication");
         }
         public static void main(String[] args) {
             ServerRunner.run(SimpleServer.class,true );
